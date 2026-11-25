@@ -1,0 +1,6 @@
+dataset,issue,column,count,action
+Balance Sheet,Missing values,hqla_gbp_m,1,Retained as missing; investigate source
+Cash Flows,Missing values,cash_outflows_gbp_m,1,Retained as missing; investigate source
+Balance Sheet,Exact duplicate rows,All columns,1,Removed exact duplicates from cleaned copy
+Cash Flows,Exact duplicate rows,All columns,1,Removed exact duplicates from cleaned copy
+Balance Sheet,Negative 30-day net cash outflow,net_cash_outflows_30d_gbp_m,1,Flagged for investigation; value not changed
