@@ -1,17 +1,32 @@
--- Purpose: Compare each entity's proxy with its previous available observation.
--- Change is in percentage points. LAG rows may not be exactly one month apart.
-WITH liquidity_trend AS (
+-- Purpose: Compare each entity's valid proxy with its previous available observation.
+-- Change is measured in percentage points; observations may not be exactly one month apart.
+WITH metrics AS (
     SELECT
-        report_date, entity_id, entity_name,
-        hqla_gbp_m / NULLIF(net_cash_outflows_30d_gbp_m, 0) * 100
-            AS lcr_proxy_pct,
-        LAG(hqla_gbp_m / NULLIF(net_cash_outflows_30d_gbp_m, 0) * 100)
-            OVER (PARTITION BY entity_id ORDER BY report_date)
-            AS previous_lcr_proxy_pct
+        report_date,
+        entity_id,
+        entity_name,
+        CASE
+            WHEN hqla_gbp_m IS NULL
+              OR hqla_gbp_m < 0
+              OR net_cash_outflows_30d_gbp_m IS NULL
+              OR net_cash_outflows_30d_gbp_m <= 0
+                THEN NULL
+            ELSE hqla_gbp_m / net_cash_outflows_30d_gbp_m * 100
+        END AS lcr_proxy_pct
     FROM public.balance_sheet
+),
+liquidity_trend AS (
+    SELECT
+        *,
+        LAG(lcr_proxy_pct) OVER (
+            PARTITION BY entity_id ORDER BY report_date
+        ) AS previous_lcr_proxy_pct
+    FROM metrics
 )
 SELECT
-    report_date, entity_id, entity_name,
+    report_date,
+    entity_id,
+    entity_name,
     ROUND(lcr_proxy_pct, 2) AS current_lcr_proxy_pct,
     ROUND(previous_lcr_proxy_pct, 2) AS previous_lcr_proxy_pct,
     ROUND(lcr_proxy_pct - previous_lcr_proxy_pct, 2) AS change_percentage_points,
